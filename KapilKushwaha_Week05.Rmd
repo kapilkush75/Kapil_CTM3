@@ -1,0 +1,269 @@
+---
+title: "ATM IOT Device Analysis"
+output:
+  flexdashboard::flex_dashboard:
+    orientation: rows
+    vertical_layout: scroll
+    horizontal_layout: scroll
+---
+```{r , include=FALSE}
+
+#### Week 5: Assessment – Data Visualization
+
+#### Dataset :- https://github.com/skathirmani/datasets/blob/master/atm_iot.csv.zip
+
+#### Data Description:- The above linked data set is generated from a IOT device which is installed in an ATM room. Parameters like room 
+#### temperature, humidity, energy consumed by all devices and number of people walking in to the room are measured on hourly basis. Except for #### people_count column, #### Convert the timestamp column to date format (hour, day, week number & month parameters)all the other values are averaged per hour. First few rows are shown here. #### Data is available for three months. Convert #### the timestamp column to date format, so that you can extract hour, day, week number &amp; month parameters easily 
+####
+####
+####
+#### Problem statement :- Come up with a static dashboard which will help the regional manager to monitor the above parameters on daily/weekly/monthly basis. Pick 
+#### appropriate layouts which will best suit your charts. Since the data is slightly anonymized, do not try to interpret the values. Instead focus on what kind of charts #### might be interesting to view.
+####
+#### Hints: The following are just few charts that you can try. But try out with your own ideas
+####
+#### 1. Use value box to create KPI to show latest month energy consumed, average number of people entering the ATM in a day/hour, average temperate and humidity 
+#### 2. Pick any parameter of your choice and plot a line chart showing daily average/cumulative value for the latest month (in the coming week we will learn how to create a #### dropdown for parameters) 
+#### 3. You can also try showing all four parameters line chart in a single row 
+#### 4. Check how many times energy consumption exceeds beyond 80 watts per hour 
+####
+####
+#### Convert the timestamp column to date format (hour, day, week number & month parameters)
+####
+####
+
+```
+
+### ATM Monitoring Dashboard
+
+```{r setup, include=FALSE}
+library(flexdashboard)
+library(knitr)
+library(dplyr)
+library(wordcloud)
+library(RColorBrewer)
+library(ggplot2)
+library(tm)
+library(plotly)
+library(lubridate)
+
+# Setting the working directory
+knitr::opts_knit$set(root.dir = "C:\\Users\\kushwaha\\Documents\\Kapil-Own\\CTM-IITM\\R-WorkSpace\\Week05")
+
+urlfile="https://github.com/skathirmani/datasets/blob/master/atm_iot.csv.zip"
+
+atmiot <- read.csv("atm_iot.csv")
+
+#  Convert the timestamp column to date format (hour, day, week number & month parameters)
+atmiot$datetime = ymd_hms(atmiot$timestamp)
+atmiot$Date_h <- as.integer(paste( hour(atmiot$timestamp) ))
+atmiot$Date_day <- as.integer(paste(day(atmiot$timestamp)))
+atmiot$Date_wk <- as.integer(paste(week(atmiot$timestamp)))
+atmiot$Date_month <- as.integer(paste(month(atmiot$timestamp)))
+
+Latest_Month_Energy_Comsumption_1 <- select(atmiot,energy_consumed, Date_month) %>% 
+            group_by(Date_month) %>% 
+            summarise(Energy_Consumed_Monthly=sum(energy_consumed)) %>%
+            arrange(desc(Date_month))
+
+Latest_Month_Energy_Comsumption <-select(atmiot,energy_consumed, Date_day) %>% 
+            group_by(Date_day) %>% 
+            summarise(Energy_Consumed_Monthly=sum(energy_consumed)) %>%
+            arrange(desc(Date_day)) %>% top_n(1)
+
+Avg_Visits_perDay <- select(atmiot,people_count,Date_day, Date_h) %>% 
+            mutate(people_count,Date_day) %>%
+            group_by(Date_day) %>% 
+            summarise(avg_visit=mean(people_count)) %>%
+            arrange(desc(Date_day)) 
+Avg_Visits_perDay
+Avg_Visits_perDay_perHour <- Avg_Visits_perDay %>% group_by(Date_day) %>% summarise(Date_day=unique(Date_day),avg_v=mean(avg_visit))
+
+
+plt_Energy_consumption <- Latest_Month_Energy_Comsumption %>% 
+                 ggplot( aes(Date_month,"sum(energy_consumed)"),color='steelblue') +
+                    geom_line(group=1,color='steelblue') + 
+                    labs(x="Dates", y = " Total Energy Consumption")
+
+```
+###
+```{r,include=FALSE}
+
+#### 1. Use value box to create KPI to show latest month energy consumed, average number of people entering the ATM in a day/hour, average temperate and humidity 
+
+```
+
+Row 1 
+-----------------------------------------------------------------------
+
+### Latest Month Energy Consumption
+
+```{r}
+valueBox(Latest_Month_Energy_Comsumption$Energy_Consumed_Monthly, 
+         icon = "fa-snowflake-o",
+         color = ifelse(Latest_Month_Energy_Comsumption$Energy_Consumed_Monthly > 3500, "warning", "primary") )
+
+
+```
+
+### Avg Visits at ATM per Day 
+```{r}
+valueBox(round(max(Avg_Visits_perDay$avg_visit),2), 
+                         icon = "fa-thumbs-up",
+                         color = "green" )
+ 
+```
+
+### Avg Visits at ATM per Hour
+```{r}
+valueBox(round(max(Avg_Visits_perDay_perHour$avg_v),2), icon = "fa-thumbs-up", color="orange")
+
+```
+
+### Avg Temperature
+
+```{r}
+valueBox(round(mean(atmiot$temperature),2), 
+         icon = "fa-snowflake-o")
+
+```
+
+### Avg Humidity
+
+```{r}
+valueBox(round(mean(atmiot$humidity),2), 
+         icon = "fa-snowflake-o")
+
+```
+
+### Total Energy Consumption
+
+```{r}
+
+valueBox(sum(Latest_Month_Energy_Comsumption_1$Energy_Consumed_Monthly), icon = "fa-snowflake-o")
+
+```
+
+Row 2
+-----------------------------------------------------------------------
+### Consumption above 80
+
+```{r}
+
+
+EC_above_80 = select(atmiot,energy_consumed,datetime) %>%
+                mutate(D_month=month(datetime),D_day = day(datetime),D_hr = hour(datetime)) %>%
+                group_by(datetime) %>%
+                summarise(EC = sum(energy_consumed), Dhour=(D_hr[energy_consumed>=80]), Dday=unique(day(datetime)),Dmonth = month(datetime))
+
+#EC_above_80
+
+EC_x80 <- select(EC_above_80,EC, Dmonth, Dday) %>% group_by(Dmonth,Dday) %>% summarise(EC_x80 = n() )
+                
+EC_x80$Dmonth = as.numeric(EC_x80$Dmonth)
+EC_x80$Dday = as.numeric(EC_x80$Dday)
+
+plt_ec80 <- ggplot( EC_x80, aes( x=Dday, y=EC_x80,color=Dmonth),fill = Dmonth) +
+              geom_point()+
+              geom_line() +
+              xlim(0,30) +
+              labs( x ='Day' ,y = 'Energy Consumption > 80' )  
+              
+            
+
+ggplotly(plt_ec80)
+```
+
+
+```{r, include=FALSE}
+### 2. Pick any parameter of your choice and plot a line chart showing daily average/cumulative value for the latest month 
+###    (in the coming week we will learn how to create a #### dropdown for parameters) 
+
+```
+
+### Average Visitor Per Day
+
+```{r}
+
+require(plotly)
+
+Avg_Visits_perDay$Date_day =  as.integer(Avg_Visits_perDay$Date_day)
+
+plt_Avg_Visits <-  ggplot(Avg_Visits_perDay, aes(x = Date_day,y = cumsum(avg_visit),group=2 ) ) +
+                            geom_step(color='steelblue')+
+                            labs(x= "Day", y="Average Visits")
+    
+
+
+ggplotly(plt_Avg_Visits)
+```
+
+### Average Visitor Per Hour
+```{r}
+
+require(plotly)
+
+Avg_Visits_perDay_perHour$Date_day =  as.integer(Avg_Visits_perDay_perHour$Date_day)
+
+plt_Avg_Visits <-  ggplot(Avg_Visits_perDay_perHour, aes(x = Date_day,y = cumsum(avg_v),group=2 ) ) +
+                            geom_step(color='steelblue')+
+                            labs(x= "Day", y="Average Visits")
+    
+
+
+ggplotly(plt_Avg_Visits)
+```
+
+### Average Temperature Per Day
+
+```{r}
+
+Avg_temperature <- select(atmiot,temperature,Date_day,Date_month) %>% 
+                  filter( Date_month==3) %>% group_by(Date_day) %>%
+                  summarise(Avg_temperature=mean(temperature)) %>%
+                  arrange(Date_day)
+Avg_temperature$Date_day = as.integer(Avg_temperature$Date_day)
+plt_avg_visits <- ggplot(Avg_temperature, aes(x=Date_day,y=Avg_temperature,group=1)) +
+                geom_line(color='steelblue')+
+                labs(x="Day", y = " Average Temperature") 
+
+ggplotly(plt_avg_visits)
+```
+
+
+### Average HUmidity Per Day
+
+```{r}
+Avg_hum <- select(atmiot,humidity,Date_day,Date_month) %>% 
+                  filter( Date_month==3) %>% group_by(Date_day) %>%
+                  summarise(avg_humidity=mean(humidity)) %>%
+                  arrange(Date_day)
+Avg_hum$Date_day = as.integer(Avg_hum$Date_day)
+plt_avg_visits <- ggplot(Avg_hum, aes(x=Date_day,y=avg_humidity,group=1)) +
+                geom_line(color='steelblue')+
+                labs(x="Day", y = "Average Humidity") 
+
+ggplotly(plt_avg_visits)
+```
+
+### Average Energy Consumption
+
+```{r}
+
+Energy_Comsumption <-select(atmiot,energy_consumed, Date_day) %>% 
+            group_by(Date_day) %>% 
+            summarise(Energy_Consumed_Monthly=sum(energy_consumed)) %>%
+            arrange(as.integer(Date_day))
+Energy_Comsumption$Date_day = as.integer(Energy_Comsumption$Date_day)
+
+plt_Energy_consumption1 <- Energy_Comsumption  %>% 
+                 ggplot( aes(x=Date_day,y=cumsum(Energy_Consumed_Monthly),group=1)) +
+                geom_line(color='steelblue')+
+                labs(x="Day", y = " Total Energy Consumption") +
+                theme(axis.text.x = element_text(angle = 45))
+
+
+ggplotly(plt_Energy_consumption1)
+
+```
+

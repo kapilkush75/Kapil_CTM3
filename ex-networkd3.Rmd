@@ -1,0 +1,73 @@
+---
+title: "ex-networkd3"
+author: "kapil"
+date: "01/10/2020"
+
+runtime: shiny
+output:
+  flexdashboard::flex_dashboard:
+    orientation: rows
+    vertical_layout: scroll
+    horizontal_layout: scroll
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+
+setwd("C:\\Users\\kushwaha\\Documents\\Kapil-Own\\CTM-IITM\\R-WorkSpace\\Week08")
+```
+
+
+
+```{r eruptions, echo=FALSE}
+library(networkD3)
+library(dplyr)
+library(shiny)
+
+ipl = read.csv("deliveries.csv")
+
+
+```
+
+
+```{r tabsets, echo=FALSE}
+
+players_summary = ipl %>% select(batting_team, batsman, total_runs) %>% 
+                        group_by(batting_team, batsman) %>%
+                        summarise(total_no_runs=sum(total_runs))
+
+vcolors=factor(players_summary$batting_team)
+vcolors1=factor("red","blue","green")
+```
+
+Sidebar {.sidebar}
+==================
+
+```{r, echo=FALSE, warning=FALSE}
+selectInput(inputId = 'select_team', label = "Enter team Name", choices = unique(players_summary$batting_team), multiple=T)
+```
+
+Players View 
+===================
+
+### Team - Players {data-height = 1050}
+---------------------------------------------------------------------------------
+
+```{r,, echo=FALSE, warning=FALSE, error=FALSE, highlight=TRUE}
+renderSimpleNetwork({
+  simpleNetwork(
+      Target = 'batting_team',
+      Source = 'batsman',
+      Data= players_summary %>% filter(batting_team %in% input$select_team),
+      nodeColour = vcolors,
+      opacity = 1,
+      zoom = T,
+      layout(layout_with_fr(players_summary))
+       )
+      
+  
+})
+```
+
+

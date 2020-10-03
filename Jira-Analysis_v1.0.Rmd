@@ -1,0 +1,100 @@
+---
+title: "JIRA Analysis"
+output: 
+  flexdashboard::flex_dashboard:
+    orientation: columns
+    vertical_layout: scroll
+runtime: shiny
+---
+
+```{r setup, include=FALSE}
+library(flexdashboard)
+library(dplyr)
+library(shiny)
+library(ggplot2)
+library(plotly)
+library(knitr)
+
+
+# Setting the working directory
+knitr::opts_knit$set(root.dir = "C:\\Users\\kushwaha\\Documents\\Kapil-Own\\CTM-IITM\\R-WorkSpace\\Week07")
+
+file.exists("C:\\Users\\kushwaha\\Documents\\Kapil-Own\\CTM-IITM\\R-WorkSpace\\Week07\\JIRADC03Sep.csv")
+Jira_File = read.csv("C:\\Users\\kushwaha\\Documents\\Kapil-Own\\CTM-IITM\\R-WorkSpace\\Week07\\JIRADC03Sep.csv", fill = TRUE, header = TRUE, skip=2)
+
+Jlist <- Jira_File %>% group_by(Component.s) %>% summarise(Type = unique(Component.s),Jira_Count=n())
+
+
+Jlist$Component.s = as.character(Jlist$Component.s)
+Jlist$Jira_Count = unclass(Jlist$Jira_Count)
+
+
+```
+
+
+
+Sidebar {.sidebar}
+==========================
+
+```{r}
+
+JCategory = unique(Jira_File$Component.s)
+selectInput("Select_Category","Select a JIRA Category",Jira_File$Component.s, multiple=FALSE,selected = TRUE)
+
+JAssignee = unique(Jira_File$Assignee)
+selectInput("Select_Assignee","Select a JIRA Assignee",JAssignee, multiple=TRUE,selected = TRUE)
+
+JPriority = unique(Jira_File$Priority)
+selectInput("Select_Priority","Select a JIRA Priority",JPriority, multiple=TRUE,selected = TRUE)
+
+```
+
+
+Dashboard
+==========================
+
+JIRA List  {data-width=850}
+-----------------------------------------------------------------------
+### Jira List
+
+```{r}
+renderTable({
+  Jlist1 = Jira_File %>% select(Component.s,Key,Labels,Assignee,Priority,Labels, Created)%>% 
+    group_by(Assignee) %>% 
+    filter( (Component.s == input$Select_Category) ) %>% 
+    filter ( (Priority %in% input$Select_Priority) &  (Assignee %in% input$Select_Assignee) ) %>%
+    summarise(Jira_Category=Component.s,Key,Assignee, Priority, Created, Labels)
+  
+  Jlist1
+})
+```
+
+
+Row 
+-----------------------------------------------------------------------
+
+### Jira by Type 
+
+```{r}
+renderPlotly({
+  ggplot(Jlist, aes(x=Component.s,y=Jira_Count, fill=Component.s))+
+    geom_bar(stat='identity',na.rm = T) +
+    labs( x = "No of Jira", y ="Category of JIRA")+ theme_minimal() +
+    theme(axis.text.x = element_text(angle = 45,hjust=2) ) + 
+    theme(plot.margin = unit(c(1,1,2.5,1.2), "mm") ) 
+})
+```
+
+### Jira Count 
+
+```{r}
+renderTable({
+  Temp <- Jira_File %>% select(Component.s,Key) %>%  
+                  group_by(Component.s) %>%
+                  summarise(Jira_Category=unique(Component.s),Jira_Count=n()) %>% 
+                  arrange(-Jira_Count)  
+  Jlist = Temp %>% select(Jira_Category, Jira_Count)
+  Jlist
+})
+```
+

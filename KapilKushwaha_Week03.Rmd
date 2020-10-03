@@ -1,0 +1,248 @@
+---
+title: "Data Visualization : Assignment-Week03"
+output: html_document
+author: "Kapil K"
+date : "August 02, 2020"
+---
+
+### Week 3: Assessment – Data Visualization
+
+
+
+### Used knitr to set root dir 
+#### root.dir = "C:\\Users\\kushwaha\\Documents\\Kapil-Own\\CTM-IITM\\R-WorkSpace\\Week03"
+
+```{r setup, include=FALSE}
+
+# Setting the working directory
+knitr::opts_knit$set(root.dir = "C:\\Users\\kushwaha\\Documents\\Kapil-Own\\CTM-IITM\\R-WorkSpace\\Week03")
+
+```
+####
+#### Using the waiter’s tip data set, perform the following
+#### Q1. Calculate average tip by the following groups and visualize the same using bar charts
+#### a. Gender
+#### b. Size of the party
+#### c. Smoker vs Non-Smoker
+#### d. Day of the week
+####  --- 
+#### Data set link: https://github.com/skathirmani/datasets/blob/master/tips.csv
+
+#### Data set description: Description for individual columns are listed below
+
+#### total_bill: bill in dollars
+#### tip: tip in dollars
+#### sex: gender of the bill payer
+#### smoker: whether there were smokers in the party
+#### day: day of the week
+#### time: time of day
+#### size: size of the party
+
+#### tips - dataset read from tips.csv
+
+```{r , warning=FALSE, message=FALSE, fig.height=5,fig.width=10}
+
+library(ggplot2)
+library(dplyr)
+library(plotly)
+
+tips <- read.csv("tips.csv")
+tips <- data.frame(tips)
+```
+#### Code for :
+#### a. Gender
+#### 
+#### Variables Used : 
+#### avg_tip_bygender - Average tip by Gender ( Day , Sex, Avg_tips ) #calculated by day 
+#### tips - data frame of data read from tips.csv
+#### Avg_tips - average tips per day for Gender or Sex
+```{r, warning=FALSE, message=FALSE, fig.height=5,fig.width=10}
+
+avg_tip_bygender <- select(tips,tip,sex,day) %>% 
+                        group_by(day,sex) %>% 
+                        summarise( Days= unique(day) , Gender = unique(sex), Avg_tips = mean(tip,na.rm=F) ) 
+
+ggplot(avg_tip_bygender, aes(x=Days, y=Avg_tips,fill=Gender) ) +
+  geom_bar(stat="Identity",na.rm = F)+
+  labs(  title = ' Avg Tips by Gender - Day wise')
+
+```
+
+#### b. Size of the party
+#### Size_of_Party - data for average tips as per size of party
+#### Avg_tips - average tips per day for Gender or Sex
+
+```{r, message = FALSE, warning=FALSE, fig.height=5,fig.width=10}
+
+Size_of_Party <- select(tips,tip,size,day) %>% 
+                        group_by(day,size) %>% 
+                        summarise(  days = unique(day) , Party_Size = unique(size), Avg_tips = mean(tip,na.rm=F) ) 
+
+ggplot(Size_of_Party, aes(x=days, y=Avg_tips )) +
+  geom_bar(aes(x=days, y = Avg_tips, fill=Party_Size),stat = 'identity',na.rm = F)+
+  geom_point(aes( size = Party_Size),color="orange") +
+  geom_line( aes(group = Party_Size) )  +
+  labs( x= "Days",  title = ' Avg Tips by Party Size - Day wise',hjust=2)+
+  facet_wrap(~Party_Size)
+  
+
+
+```
+#### c. Smoker vs Non-Smoker
+#### Party_Smoker - data for average tips as per size of party
+#### Avg_tips - average tips per day for Gender or Sex
+```{r, message=FALSE, warning=FALSE}
+
+Party_Smoker <- select(tips,tip,smoker,day) %>% 
+                        group_by(day,smoker) %>% 
+                        summarise(  days = unique(day) , smoke = smoker, Avg_tips = mean(tip,na.rm=F) ) 
+
+ggplot(Party_Smoker, aes(x=smoke, y=Avg_tips,fill=smoke)) +
+  geom_bar(stat='Identity')
+  
+  
+
+```
+#### d. Day of the week
+
+```{r, message=FALSE, warning=FALSE}
+
+Party_Days <- select(tips,tip,smoker,day) %>% 
+                        group_by(day) %>% 
+                        summarise(  days = unique(day), Avg_tips = mean(tip,na.rm=F) ) 
+
+ggplot(Party_Days, aes(x=days, y=Avg_tips )) +
+  geom_bar(aes(x=days, y = Avg_tips,fill=days),stat = 'identity',na.rm = F)+
+  geom_point(aes( size = days), stat = "Identity") +
+  geom_line( aes(group = 1) )  +
+  labs( x= "Days",  title = ' Avg Tips by Day of the week') 
+
+  
+
+```
+
+
+
+
+
+### Q2. Also create box plot for tip amount column. Split the box plot by above mentioned categories.
+
+#### Code for 
+#### a. Gender
+
+```{r}
+
+avg_tip_bygender <- select(tips,tip,sex,day) %>% 
+                        group_by(day,sex) %>% 
+                        summarise( Days= unique(day) , Gender = unique(sex), Avg_tips = mean(tip,na.rm=F) ) 
+
+  ggplot(avg_tip_bygender, aes(x=Days, y=Avg_tips )) +
+  geom_boxplot(aes(color=Gender,fill = Gender)) +
+  labs(  title = ' Box Plot Avg Tips by Gender ') 
+
+
+```
+
+
+#### b. Size of the party
+#### Size_of_Party - data for average tips as per size of party
+#### Avg_tips - average tips per day for Gender or Sex
+
+```{r, warning=FALSE,message=FALSE}
+require(plotly)
+Size_of_Party <- select(tips,tip,size,day) %>% 
+                        group_by(day,size) %>% 
+                        summarise(  days = unique(day) , Party_Size = unique(size), Avg_tips = mean(tip,na.rm=F) ) 
+
+plt <- ggplot(Size_of_Party, aes(x=days, y=Avg_tips,fill=days)) + geom_boxplot() + 
+  labs( x= "Days",  title = ' Avg Tips by Party Size - Day wise',hjust=2)+
+  guides(fill=FALSE) + coord_flip()
+
+fig <- ggplotly(plt)
+fig
+```
+
+#### c. Smoker vs Non-Smoker
+
+```{r, warning=FALSE,message=FALSE}
+require(plotly)
+
+Party_Smoker <- select(tips,tip,smoker,day) %>% 
+                        group_by(day,smoker) %>% 
+                        summarise(  days = unique(day) , smoke = smoker, Avg_tips = mean(tip,na.rm=F) ) 
+
+plt <- ggplot(Party_Smoker, aes(x=days, y=Avg_tips)) +
+  geom_boxplot(aes(  fill = smoke, color = smoke, size= Avg_tips)) +
+  geom_line( aes(group=smoke) )  +
+  labs( x= "Days",  title = ' Avg Tips by Smoker vs Non Smoker - Day wise')
+
+fig <- ggplotly(plt)
+fig
+
+```
+
+#### d. Day of the week
+
+```{r, warning=FALSE,message=FALSE}
+
+require(plotly)
+
+Party_Days <- select(tips,tip,smoker,day) %>% 
+                        group_by(day) %>% 
+                        summarise(  days = unique(day), Avg_tips = mean(tip,na.rm=F) ) 
+
+plt <- ggplot(Party_Days, aes(x=days, y=Avg_tips )) +
+  geom_boxplot(aes(  fill = days, color = days, size = Avg_tips))+
+  geom_point(color="darkblue") +
+  geom_line( aes(group = 1 ), color="lightblue" )  +
+  labs( x= "Days",  title = ' Avg Tips by Day of the week') 
+
+fig <- ggplotly(plt)
+fig
+```
+#### Q3. Using the above bar charts &amp; box plots, identify which group influences the tip amount.
+
+```{r, warning=FALSE,message=FALSE}
+require(plotly)
+plt <- tips %>% ggplot(aes(x=total_bill, y=tip)) +geom_point() 
+
+  fig <- ggplotly(plt)
+fig
+
+```
+####
+#### Q4. Visualize the relationship between total bill amount vs tip amount using scatter plot. The metric of interest should always be in the Y-axis. Here we are interested in understanding the tip pattern. Hence Y-axis should be tip amount and X axis should be total bill.
+####
+
+```{r,warning=FALSE,message=FALSE}
+    require(plotly)
+    plt <- tips %>% ggplot(aes(x=total_bill, y=tip, color=day)) + 
+              geom_point() 
+    
+    fig <- ggplotly(plt)
+    fig
+    
+
+```
+
+
+
+####  Q5. Based on the above scatter plot, what do you think the waiter will do. Will he/she make you eat more or less to get good tip?
+####  Q6. In the above scatter plot, color each circle by gender and list down your inferences
+
+```{r,warning=FALSE,message=FALSE, fig.width=15,fig.height=5}
+require(plotly)
+names(tips)
+
+total_tips = sum(tips$tip)
+coparison <- select( tips, sex, total_bill, tip) %>% group_by(sex) %>% summarise(sex,Avg_tips=mean(tip, na.rm=F) ) 
+
+ggplot(coparison, aes(x=sex,y=Avg_tips, color=sex)) +
+  geom_point(size=5) +
+  geom_smooth() +
+  labs(caption = " Average Male tips are higher then Female to get good tips")
+
+
+
+```
+####

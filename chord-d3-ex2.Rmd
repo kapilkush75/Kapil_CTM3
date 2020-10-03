@@ -1,0 +1,99 @@
+---
+title: "Chord Diagram development"
+runtime: shiny
+author: "kapil"
+date: "30/09/2020"
+output:
+  flexdashboard::flex_dashboard:
+    orientation: rows
+    vertical_layout: scroll
+    horizontal_layout: scroll
+---
+
+```{r setup, include=FALSE}
+library(flexdashboard)
+library(shiny)
+library(dplyr)
+library(reshape2)
+library(chorddiag)
+
+
+setwd("C:\\Users\\kushwaha\\Documents\\Kapil-Own\\CTM-IITM\\R-WorkSpace\\Week08")
+
+parliament = read.csv("parliament.csv")
+
+
+```
+
+
+
+```{r}
+years = sort( unique(parliament$YEAR))
+states = sort(unique(parliament$STATE))
+parties = sort(unique(parliament$PARTY))
+
+fluidRow( column( width = 3, offset = 1,selectInput(inputId = "select_year",   label ="Select a Year",  choices = years, multiple = FALSE)) ,
+          column( width = 3, offset = 1,selectInput(inputId = "select_states",  label ="Select multiple State", choices = states, multiple = TRUE )),
+          column( width = 3, offset = 1,selectInput(inputId = "select_parties",label ="Select Multiple Parties", choices = parties, multiple = TRUE))
+  )
+
+```
+
+Results {data-width = 650}
+-----------------------------------------------------------------------------------
+
+### Results
+
+```{r}
+
+tableOutput("table_result")
+
+```
+
+
+
+```{r}
+observe({
+  
+  
+  if ( ( length(input$select_states) == 0) | (length(input$select_year) == 0) | (length(input$select_parties) == 0) ){
+      return(NULL)
+    }
+    
+    
+  parties_win = parliament %>% filter(
+           YEAR == input$select_year,
+           PARTY %in% input$select_parties,
+           STATE %in% input$select_states,
+           Position==1) %>% 
+    group_by(PARTY,STATE) %>% 
+    summarise(wins=sum(Position))
+ 
+    
+  parties_win_pivot = dcast(parties_win, STATE ~ PARTY, value.var = "wins")
+  rownames(parties_win_pivot) = parties_win_pivot$STATE
+  results = as.matrix( parties_win_pivot %>% select(-STATE)) 
+  
+  output$table_result = renderTable({
+    results 
+  })
+
+  output$chord = renderChorddiag({
+    chorddiag(results, type = "bipartite", showTicks = T, groupnameFontsize = 14, groupnamePadding = 10, margin = 90)
+  })
+  
+})
+
+
+
+```
+
+Column 1
+-------------------------------------------------------------------------------------
+
+### Chart Chord Diagram
+
+```{r}
+chorddiagOutput("chord")
+```
+

@@ -1,0 +1,111 @@
+---
+title: "Data Visualization : Assignment-Week1"
+output: html_document
+author: "Kapil K"
+date: "July 18, 2020"
+---
+
+### Assessment 1 - Part 2
+### Use the dataset from the link below and create appropriate visuals.
+### https://github.com/skathirmani/ctm-2020/blob/master/datasets/us.car.accidents.csv.zip
+## Question 1 :
+### Using car accidents data set (available in the github repository, link is given above), identify the types of columns available
+
+### Code : ( URL Download , Unzip not working )
+```{r}
+setwd("C:\\Users\\kushwaha\\Documents\\Kapil-Own\\CTM-IITM\\R-WorkSpace\\Week01")
+getwd()
+ms =read.csv("us.car.accidents.csv",sep=",")
+names(ms)
+print("\n\n")
+sapply(ms, typeof)
+
+
+```
+## Question 2 :
+
+### Using car accidents data sets identify the following
+### 1. Identify how many different types of Race are available in the data set
+### 2. For each Race, identify the number of accidents reported
+### 3. Using Injury Severity column, identify percentage of Fatal Injury (K)
+
+### Code : 
+
+```{r}
+library(dplyr)
+RaceTyep <- select(ms,Race, Fatalities.in.crash ) %>% summarise(RaceTyep = unique(ms$Race))
+print('Race Types of Races :')
+print(RaceTyep)
+
+df <- select(ms,Race, Fatalities.in.crash) %>% group_by(Race) %>% summarise(RaceTyep = unique(Race), Acc = sum(Fatalities.in.crash))
+No_Accidents = select(df, RaceTyep, Acc)
+print(No_Accidents)
+
+Total_Fatalities <- sum(ms$Fatalities.in.crash)
+
+df <- select(ms,Race, Fatalities.in.crash, Injury.Severity)%>%  group_by(Injury.Severity) %>% summarize(Injury = unique(Injury.Severity), Acc = sum(Fatalities.in.crash), Percent_Fatalities = round( (Acc/Total_Fatalities * 100),2))
+ 
+Percent_F <- select(df, Injury , Percent_Fatalities)
+
+print(Percent_F)
+
+```
+### Using the categorical columns in the cars data set create a data frame with the following columns
+###  1 Column name
+###  2 No. of unique levels
+###  3 Most frequent level
+###  4 Percentage of most frequent level
+###  5 %Levels contribute to 80% frequency: Identify what percentage of levels are required to get 80% of the frequency
+
+```{r}
+library(dplyr)
+Column_name <- names(ms)
+Column_name = data.frame(Column_name)
+print(Column_name)
+#2 No. of unique levels
+df <- data.frame(ms)
+
+#2 No. of unique levels
+Level_State  <- data.frame(unique(df$State) )	
+Total_Count = nrow(Level_State)
+print("No. of Unique Levels :" )
+print(Total_Count )
+
+#3 Most frequent level
+dt <- select(ms,State, Race)%>%  group_by(State)   %>% summarize( Freq_State = n())
+df <- select( dt,State,Freq_State)  %>% summarize( State,Frequent_State = (Freq_State/n()) ) %>% arrange(desc(Frequent_State))
+print(df[1,1])
+
+
+#4 Percentage of most frequent level
+print( round(df[1,2],2) )
+      
+
+```
+
+
+```{r}
+#5 %Levels contribute to 80% frequency: Identify what percentage of levels are required to get 80% of the frequency
+library(dplyr)
+ 
+ 
+ cities <- c(ms$State, ms$Fatalities.in.crash)
+ Uniq_Cities <- c(unique(ms$State))
+ 
+ TotalF <-sum(ms$Fatalities.in.crash)
+ 
+ T <- select(ms,State,Fatalities.in.crash)
+ TF <- select(T,State, Fatalities.in.crash) %>% group_by(State)   %>% summarize( Total_Fatalities = (sum(Fatalities.in.crash)), PFatalities = (( Total_Fatalities/TotalF) *100)) %>% arrange( desc(PFatalities))
+ Lfatal = max(TF$PFatalities)
+ Lfatal
+
+ PLevel = Lfatal*0.8
+ PLevel
+ P80cities <- select(TF,State, PFatalities) %>% group_by(State) %>% summarize( PFatalities, List_80 = (PFatalities > PLevel)) %>% filter(List_80==TRUE) %>% arrange(desc(PFatalities))
+summary(P80cities )
+summary(TF)
+P80cities
+
+
+
+```

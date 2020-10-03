@@ -1,0 +1,178 @@
+---
+title: "Ex3"
+author: "kapil"
+date: "03/10/2020"
+
+runtime: shiny
+output: 
+  flexdashboard::flex_dashboard:
+    orientation: columns
+    vertical_layout: scroll
+    horizontal_layout: scroll
+---
+
+```{r setup, include=FALSE}
+library(flexdashboard)
+library(shiny)
+library(reshape2)
+library(dplyr)
+library(networkD3)
+library(chorddiag)
+library(ggplot2)
+library(plotly)
+
+knitr::opts_chunk$set(echo = FALSE)
+
+
+setwd("C:\\Users\\kushwaha\\Documents\\Kapil-Own\\CTM-IITM\\R-WorkSpace\\Week08")
+
+ipld = read.csv("deliveries.csv")
+iplm = read.csv("matches.csv")
+
+head(ipld)
+head(iplm)
+```
+
+```{r, include=FALSE}
+teams =  unique(c(ipld$batting_team,ipld$bowling_team ))
+
+batsmans = unique(ipld$batsman)
+bowlers = unique(ipld$bowler)
+No_Batsmans = length(batsmans)
+No_Bowlers = length(bowlers)
+No_matches = unique(ipld$match_id)
+
+top_batsman_50 = select(ipld,match_id, batsman,total_runs ) %>% 
+  group_by(match_id,batsman ) %>% summarise(TotalRuns = sum(total_runs)) %>%
+  filter( TotalRuns <=100 & TotalRuns > 50) %>% group_by(batsman)%>%
+  summarise(Batsman_50=unique(batsman), Fifties = n()) %>% arrange(-Fifties)
+
+top_batsman_50 = select(top_batsman_50,Batsman_50,Fifties)
+
+top_batsman_100 = select(ipld,match_id, batsman,total_runs ) %>% 
+  group_by(match_id,batsman ) %>% summarise(TotalRuns = sum(total_runs)) %>%
+  filter( TotalRuns >= 100 ) %>% group_by(batsman)%>%
+  summarise(Batsman_100=unique(batsman), Century = n())%>% arrange(-Century)
+
+top_batsman_100 = select(top_batsman_100,Batsman_100,Century)
+
+MatchYear = unique(as.integer(iplm$season))
+
+iplm$match_id = iplm$id 
+iplm = select(iplm,-id)
+
+matches_tmp = select(iplm,match_id,season,team1,team2,winner)
+delivery_tmp = select(ipld,match_id,batting_team,bowling_team,batsman,bowler, total_runs )
+
+AllMatch_data = merge(x = matches_tmp, y = delivery_tmp, by = "match_id", all = TRUE)
+
+season_win = select(AllMatch_data,match_id,season, winner) %>%
+     group_by(season,winner) %>% 
+     summarise(Year = unique(season),Team_won =  unique(winner), Total_Win = n())%>%
+     arrange(-Year,-Total_Win)
+   
+
+season_winner= select(season_win,winner,season) %>% 
+  filter(winner!="")%>%
+  group_by(winner,season)%>%
+  summarise(Yr = unique(season), winner, Totalwin=n())
+
+season_winner <- select(season_winner,winner, Yr)
+
+```
+
+Data Analysis
+====================
+
+----------------------------------------------------------------------------------
+
+```{r}
+uiOutput("Select_Year")
+
+```
+
+```{r}
+
+```
+
+
+Row 1
+-----------------------------------------------------------------------------------
+
+### Batsman List Top 10
+
+```{r}
+tableOutput("TopBatsman")
+```
+
+Row 2
+------------------------------------------------------------------------------------
+
+### Winning Team of Season
+
+```{r}
+tableOutput("WinTeam")
+```
+
+
+Higlights
+====================
+
+Column 1
+-----------------------------------------------------------------------------------
+
+### Top 10 Batsman Fifties
+
+```{r}
+tableOutput("Top_batsman_50")
+```
+
+
+Column 1
+-----------------------------------------------------------------------------------
+### Top 10 Batsman Century
+
+```{r}
+tableOutput("Top_batsman_100")
+```
+
+
+```{r, include=FALSE}
+observe({
+  
+  output$Top_batsman_100 =   renderTable({
+   top_batsman_100 %>% head(10)
+  })
+  
+  output$Top_batsman_50 =   renderTable({
+   top_batsman_50 %>% head(10)
+  })
+  
+  output$Select_Year = renderUI({
+    selectInput("Selected_Year",label="Select Year",choices = MatchYear, multiple = TRUE )
+    
+  })
+  
+ 
+ output$TopBatsman = renderTable({
+    batsman_year = select(AllMatch_data,match_id,season, batsman,total_runs)%>%
+    filter(season %in% input$Selected_Year)%>%
+    group_by(batsman)%>%
+    summarise(Batsmas_year = unique(batsman),TotalRun = sum(total_runs,na.rm = T))%>%
+    arrange(-TotalRun)
+    batsman_year = select(batsman_year,Batsmas_year,TotalRun)
+ 
+    batsman_year %>% head(10)
+  })
+ 
+ output$WinTeam = renderTable({
+ season_winner %>% filter(Yr %in% input$Selected_Year)
+ })
+ 
+ 
+ 
+ 
+  
+})
+```
+

@@ -1,0 +1,133 @@
+---
+title: "Google Playstore Analysis"
+runtime: shiny
+output: 
+  flexdashboard::flex_dashboard:
+    orientation: columns
+    vertical_layout: scroll
+---
+
+```{r, include=FALSE}
+#### Week 6: Assessment – Data Visualization
+#### 
+#### Dataset :- https://github.com/skathirmani/ctm-2019/blob/master/datasets/googleplaystore.csv.zip
+#### 
+#### Using Google Play Store data set, create an interactive dashboard using the following instructions
+#### 
+#### Mandatory questions
+#### 
+#### 1. Create a simple drop down in the side panel for selecting the app category.
+#### 2. In the right side chart area, create layout for two charts, one below the other.
+#### 3. In top right chart area, create a simple vertical bar chart for visualization of top 10 apps based on rating 
+####    column using the selected category.
+#### 4. In the bottom of the page, create a bar chart to visualize top 10 apps in the selected category based on Installs column (Hint:- ####    you need to clean the column by removing spaces and plus symbols)
+#### 
+#### 
+```
+
+
+```{r setup, include=FALSE}
+library(flexdashboard)
+library(shiny)
+library(dplyr)
+library(ggplot2)
+library(plotly)
+
+google_ps = read.csv("googleplaystore.csv")
+AppCategory = unique(google_ps$Category)
+
+google_ps$Installed = as.integer(gsub("[a-zA-Z,+]","",google_ps$Installs))
+
+```
+
+Sidebar {.sidebar}
+==========================
+
+
+```{r}
+#### 
+
+#### 1. Create a simple drop down in the side panel for selecting the app category.
+
+selectInput("Select_AppCategory","Select a App Category",AppCategory, multiple=FALSE,selected = TRUE)
+sliderInput("no_rows", "Select No of Rows to Display",min=5, max=50,value = 10)
+```
+
+```{r,include=FALSE}
+
+#### 2. In the right side chart area, create layout for two charts, one below the other.
+#### 3. In top right chart area, create a simple vertical bar chart for visualization of top 10 apps based on rating 
+####    column using the selected category.
+
+# Variables used 
+# top_app_rating = Data frame for Top App Rating based on input from dropdwon on sidebar
+# topx_plot = ggplot output variable , with aesthetic, thems, labels seeting. 
+# input$Select_AppCategory - Selected App Category from dropdown 
+# input$no_rows - selected input from slidebar for no of top results from App Rating based on Category
+#
+```
+
+
+Dashboard
+==========================
+
+
+Row {data-width=450}
+-----------------------------------------------------------------------
+
+### Top x apps Based on Rating
+
+```{r}
+
+ renderPlotly({
+       top_app_rating = google_ps %>% 
+                  select(App,Category,Rating) %>%
+                  group_by(Category) %>% 
+                  filter(Category == input$Select_AppCategory) %>%
+                  summarise(App,Rating) %>%
+                  arrange(Rating) %>%
+                  head(input$no_rows)
+      topx_plot = ggplot(top_app_rating, aes(x=reorder(App,-Rating),y=as.integer(Rating) ) )  +
+        geom_bar(stat='identity',na.rm=T,fill='steelblue')+
+        labs( x = "App", y =" App Rating")+ theme_minimal() +
+       theme(axis.text.x = element_text(angle = 45,hjust=1) ) + 
+       theme(plot.margin = unit(c(1,1,2.5,1.2), "mm") ) 
+      
+      ggplotly(topx_plot)
+  })
+```
+
+
+### Top x Apps Based on Installs
+```{r,include=FALSE}
+#### 4. In the bottom of the page, create a bar chart to visualize top 10 apps in the selected category based on Installs column (Hint:- ####    you need to clean the column by removing spaces and plus symbols)
+
+# Variables used 
+# top_app_installs = Data frame for Top App Installed based on input from slide bar
+# topx_installs_plot = ggplot output variable , with aesthetic, thems, labels seeting. 
+# input$Select_AppCategory - Selected App Category from dropdown 
+# input$no_rows - selected input from slidebar for no of top results from installed apps based on Category
+#
+```
+
+```{r}
+
+ renderPlotly({
+     top_app_installs = google_ps %>% 
+                  select(App,Category,Installed) %>%
+                  group_by(Category) %>% 
+                  filter(Category == input$Select_AppCategory) %>%
+                  summarise(App,Installed) %>%
+                  arrange(Installed) %>%
+                  head(input$no_rows)
+       
+      topx_installs_plot = ggplot(top_app_installs, aes(x=reorder(App,-Installed),y=as.integer(Installed) ) )  +
+                            geom_bar(stat='identity',na.rm=T,fill='steelblue')+
+                            labs( x = "App", y ="No of App Installs")+ theme_minimal() +
+                            theme(axis.text.x = element_text(angle = 45,hjust=1) ) + 
+                            theme(plot.margin = unit(c(1,1,2.5,1.2), "mm") ) 
+      
+      ggplotly( topx_installs_plot)
+  })
+
+```

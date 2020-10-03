@@ -1,0 +1,211 @@
+---
+title: "Data Analysis"
+runtime: shiny
+output: 
+  flexdashboard::flex_dashboard:
+    orientation: column
+    vertical_layout: scroll
+    horizontal_layout: scroll
+---
+
+```{r setup, include=FALSE}
+library(flexdashboard)
+library(dplyr)
+library(tidyr)
+library(tidyverse)
+
+
+
+```
+
+Sidebar {.sidebar}
+===============================
+
+
+```{r}
+
+fileInput("ufile1", "Upload a File")
+fileInput("ufile2", "Upload a File")
+fileInput("ufile3", "Upload a File")
+fileInput("ufile4", "Upload a File")
+
+uiOutput("cols_df1")
+uiOutput("cols_df2")
+uiOutput("cols_df3")
+uiOutput("cols_df4")
+
+```
+
+
+
+```{r}
+observe({
+  
+  # File 1
+  if(is.null(input$ufile1)){
+    return(NULL)
+  }
+  
+  output$fdata1 = renderTable({
+   input$ufile1
+  })
+  
+  # File 2
+  if(is.null(input$ufile2)){
+    return(NULL)
+  }
+  
+  output$fdata2 = renderTable({
+   input$ufile2
+  })
+  
+  # File 3
+  if(is.null(input$ufile3)){
+    return(NULL)
+  }
+  
+  output$fdata3 = renderTable({
+   input$ufile3
+  })
+  
+  # File 4
+  if(is.null(input$ufile4)){
+    return(NULL)
+  }
+  
+  output$fdata4 = renderTable({
+   input$ufile4
+  })
+  
+  
+  # File 1 - Cols
+  df1 = read.csv(input$ufile1$datapath,sep=,)
+  cols_df1 = colnames(df1)
+  
+  # File 2 - Cols
+  df2 = read.csv(input$ufile2$datapath,sep=,)
+  cols_df2 = colnames(df2)  
+  
+  # File 3 - Cols
+  df3 = read.csv(input$ufile3$datapath,sep=,)
+  cols_df3 = colnames(df3)
+  
+  # File 4 - Cols
+  df4 = read.csv(input$ufile4$datapath,sep=,)
+  cols_df4 = colnames(df4)
+  
+   #-------------------------------------------------------------------
+  
+ 
+  output$cols1 = renderUI({
+    selectInput( inputId = "select_col1", label = "select a Column", 
+                 choices = cols_df1, multiple = TRUE )
+  })
+ 
+  output$cols1 = renderTable({
+   cols_df1
+  })
+  
+  
+    output$cols2 = renderUI({
+    selectInput( inputId = "select_col2", label = "select a Column", 
+                 choices = cols_df2, multiple = TRUE )
+  })
+ 
+  output$cols2 = renderTable({
+   cols_df2
+  })
+  
+    output$cols3 = renderUI({
+    selectInput( inputId = "select_col3", label = "select a Column", 
+                 choices = cols_df3, multiple = TRUE )
+  })
+ 
+  output$cols3 = renderTable({
+   cols_df3
+  })
+  
+    output$cols4 = renderUI({
+    selectInput( inputId = "select_col4", label = "select a Column", 
+                 choices = cols_df4, multiple = TRUE )
+  })
+ 
+  output$cols4 = renderTable({
+   cols_df4
+  })
+  
+
+})
+```
+
+Dashboard
+===============================
+
+Row 1 
+----------------------------------------------------------------------------------------------------------
+
+### 1 File To Upload
+
+```{r , fig.height=2, fig.width=2}
+  tableOutput("fdata1")
+
+```
+
+
+
+
+### No of Cols from Content 1
+
+```{r, fig.height=2, fig.width=2}
+  tableOutput("cols1")
+```
+
+Row 2
+----------------------------------------------------------------------------------------------------------
+
+### 2 File To Upload
+
+```{r , fig.height=2, fig.width=2}
+  tableOutput("fdata2")
+```
+
+
+### No of Cols from Content 2
+
+```{r, fig.height=2, fig.width=2}
+  tableOutput("cols2")
+```
+
+Row 3
+----------------------------------------------------------------------------------------------------------
+
+### 3 File To Upload
+
+```{r , fig.height=2, fig.width=2}
+  tableOutput("fdata3")
+```
+
+
+### No of Cols from Content 3
+
+```{r, fig.height=2, fig.width=2}
+  tableOutput("cols3")
+```
+
+Row 4
+----------------------------------------------------------------------------------------------------------
+
+### 4 File To Upload
+
+```{r , fig.height=2, fig.width=2}
+  tableOutput("fdata4")
+```
+
+
+### No of Cols from Content 4
+
+```{r, fig.height=2, fig.width=2}
+  tableOutput("cols4")
+```
+
+

@@ -1,0 +1,474 @@
+---
+title: "Data Analysis"
+runtime: shiny
+output: 
+  flexdashboard::flex_dashboard:
+    orientation: row
+    vertical_layout: scroll
+    horizontal_layout: scroll
+---
+
+```{r setup, include=FALSE}
+library(flexdashboard)
+library(shiny)
+library(dplyr)
+library(tidyverse)
+library(ggplot2)
+library(plotly)
+
+
+# Dataset :"https://github.com/skathirmani/ctm-2019/blob/master/datasets/ipl.zip"
+
+URL_dataIPL = "https://github.com/skathirmani/ctm-2019/blob/master/datasets/ipl.zip"
+
+
+```
+
+File  {.sidebar}
+=========================
+
+
+```{r}
+fileInput("uf_matches", "Upload a Match File")
+
+fileInput("uf_deliveries", "Upload a Deliveries File")
+
+
+```
+
+Assignment - Question
+=========================
+
+Column
+------------------------------------------------------------------------------------
+
+```{r}
+
+text1 = paste("###  Week 7: Assessment – Data Visualization")
+text2 = paste("Dataset :- https://github.com/skathirmani/ctm-2019/blob/master/datasets/ipl.zip")
+```
+
+```{r}
+text3 = paste(" Using IPL data set, create a shiny application with the following analysis as individual tabs in a R Shiny application.")
+```
+
+```{r}
+text4 = paste(" 1.In the first tab, create a summary view for all the seasons. Season wise report winning team, batsman with highest run 
+  scorer and bowler with highest number of wickets.")
+
+text5 = paste("2. In the second tab for single season summary. Create dropdown for selecting a single season and report team wise number of matches won, top run scorer, highest wicket taker")
+  
+text6 = paste("3. In the third tab, come up with interesting charts to analyze players performance across seasons. Add appropriate filters and ,
+  make sure that you have   a #dropdown to select a team and a player.")
+  
+text7 = paste("4. In the fourth tab, come up with interesting charts to analyze team performance in single season. Add appropriate filters and  make sure that you have a #dropdown for selecting a season and team.")
+  
+text8 = paste("Optional: Try deploying your application in shiny server using free plans. Sign up and see the steps in this link http://www.shinyapps.io for deployment.")
+
+t = paste( text1,text2,text3,text4,text5,text6,text7,text8)
+t
+```
+
+File Uploaded
+=========================
+
+Row 1
+----------------------------------------------------------------------------------------------------------
+### File Content ( Matches )
+
+```{r}
+
+uiOutput("matches_cols")
+```
+
+```{r}
+  tableOutput("dfm_Tables_cols")
+```
+
+### File Content ( Deliveries )
+
+```{r}
+uiOutput("deliveries_cols")
+
+```
+
+```{r}
+  tableOutput("dfd_Table_cols")
+```
+
+Row 2
+----------------------------------------------------------------------------------------------------------
+
+### File uploaded - Matches
+
+```{r , fig.height=2, fig.width=5}
+  tableOutput("fdatam")
+```
+
+
+### File uploaded - Deliveries
+
+```{r , fig.height=2, fig.width=5}
+  tableOutput("fdatad")
+```
+
+Summary View
+==========================
+
+Row 1
+---------------------------------------------------------------------------------------------------------
+
+### Batsman with Highest Run Score
+
+```{r}
+
+valueBoxOutput("HighestRun")
+
+```
+
+### Bowler with Highest Wicket
+
+```{r}
+
+valueBoxOutput("HighestWicket")
+
+```
+
+Row 2
+------------------------------------------------------------------------------------
+
+### Season wise Winner 
+
+```{r}
+plotOutput("Season_Winner")
+```
+
+Row 3
+------------------------------------------------------------------------------------
+
+### List of Season wise Winner 
+
+```{r}
+tableOutput("All_Season_TeamWon")
+```
+
+Single Season Summary View
+==========================
+
+```{r}
+uiOutput("Single_Season")
+```
+
+```{r}
+#uiOutput("Season_TeamWon")
+```
+
+Row 1
+------------------------------------------------------------------------------------
+
+### Season Highest Runs
+
+```{r}
+
+valueBoxOutput("SeasonHighestRun")
+
+```
+
+### Season Batsman with Highest Runs
+
+```{r}
+valueBoxOutput("SeasonHighestRun_Batsman")
+```
+
+
+### Bowler with Highest Wicket
+
+```{r}
+
+valueBoxOutput("SeasonHighestWicket")
+
+```
+
+Row 2
+------------------------------------------------------------------------------------
+
+### Season Winning Teams Data
+
+```{r}
+tableOutput("SeasonWinnerT")
+```
+
+### Season - Winning Teams Report
+
+```{r}
+plotlyOutput("SeasonWinnerT_Plot")
+```
+
+
+Team and Player Performance Summary View
+=========================================
+
+```{r}
+uiOutput("SelectedTeam")
+```
+
+```{r}
+uiOutput("SelectedPlayer")
+```
+
+Row 1 
+------------------------------------------------------------------------------------
+
+### Team Batting Performance
+
+```{r}
+plotOutput("BattingTeam_Performance")
+```
+
+### Team Bowling Performance
+
+```{r}
+plotOutput("BowlingTeam_Performance")
+```
+
+Row 2
+------------------------------------------------------------------------------------
+
+### Player Batting Performance
+
+```{r}
+plotOutput("BattingTeam_Player_Performance")
+```
+
+### Player Bowling Performance
+
+```{r}
+plotOutput("BowlingTeam_Player_Performance")
+```
+
+
+
+
+```{r}
+
+options(shiny.maxRequestSize = 40*1024^2)
+
+observe({
+  # File Upload
+  if(is.null(input$uf_matches)){
+    return(NULL)
+  }
+    output$fdatam = renderTable({
+   input$uf_matches
+  })
+  
+  if(is.null(input$uf_deliveries)){
+    return(NULL)
+  }
+    output$fdatad = renderTable({
+   input$uf_deliveries
+  })
+  
+  dfmatches = read.csv(input$uf_matches$datapath,sep=,)
+  cols_dfm = colnames(dfmatches)
+
+  dfdeliveries = read.csv(input$uf_deliveries$datapath,sep=,)
+  dfdeliveries$dfd_season = as.integer(strptime(as.Date(dfdeliveries$date,'%d-%m-%y'), '%Y')$year+1900 )
+  cols_dfd = colnames(dfdeliveries)
+  
+  output$matches_cols = renderUI({
+    selectInput( inputId = "dfm_col", label = "select a Matches Column", 
+                 choices = cols_dfm, multiple = TRUE )
+  })
+  
+  output$deliveries_cols = renderUI({
+    selectInput( inputId = "dfd_col", label = "select a Delivery Column", 
+                 choices = cols_dfd, multiple = TRUE )
+  })
+ 
+  output$dfm_Tables_cols = renderTable({
+   dfmatches[1:10,input$dfm_col]
+  })
+  
+  output$dfd_Table_cols = renderTable({
+   dfdeliveries[1:10,input$dfd_col]
+  })
+  
+  # Summary View
+  
+  output$HighestRun = renderValueBox({
+    
+    BatHigh = dfdeliveries %>% select(batsman,batsman_runs) %>% group_by(batsman) %>% 
+      summarise(TotalRuns = sum(batsman_runs)) %>% 
+      arrange(-TotalRuns) %>% top_n(1)
+    BatHigh$batsman
+  })
+  
+  output$HighestWicket = renderValueBox({
+      
+   wickets = dfdeliveries[dfdeliveries$player_dismissed !="",] %>% select(bowler,player_dismissed) %>% 
+      group_by(bowler)%>% 
+      summarise(unique(bowler,player_dismissed),w = n()) %>% 
+      arrange(-w)%>% top_n(1)
+      wickets$bowler
+  })
+  
+  output$Season_Winner = renderPlot({
+    
+    dfmatches %>% select(season, winner) %>% group_by(season,winner) %>% summarise(season, winner, Wins = n()) %>%
+      ggplot(aes(x=season,y=Wins,color=winner)) +
+      geom_line(stat='identity', na.rm=F) +
+      geom_point(size=4)
+    
+  })
+  
+  output$All_Season_TeamWon = renderTable({
+      
+   Season_Team_Win = dfmatches %>% 
+      select(season,winner) %>% 
+      group_by(season,winner) %>% 
+      filter(winner!="")%>%
+      summarise(won = n()) %>% 
+      arrange(season)
+  })
+  
+  # Single Season Summary View
+ 
+  select_season = sort(as.integer(unique(dfdeliveries$dfd_season)))
+  
+  output$Single_Season = renderUI({
+    selectInput( inputId = "dseason", label = "select a season", 
+                 choices = select_season, multiple = FALSE)
+  })
+
+  #Season Highest Run & Batsman
+  SHRTemp = dfdeliveries %>% select(dfd_season,batsman,batsman_runs) %>% filter(dfd_season %in% input$dseason)
+  
+  SHighestRun = SHRTemp %>% group_by(batsman) %>% 
+      summarise(total_runs=sum(batsman_runs,na.rm=T)) %>% 
+      arrange( -total_runs) %>% top_n(1)
+   SH_run = SHighestRun$total_runs
+   SH_batsman = SHighestRun$batsman
+ 
+  output$SeasonHighestRun = renderValueBox({
+      SH_run
+  })
+  output$SeasonHighestRun_Batsman = renderValueBox({
+      SH_batsman
+  })
+  
+  #Season Bowler with Highest Wicket Score
+  output$SeasonHighestWicket = renderValueBox({
+      
+      wickets = dfdeliveries[dfdeliveries$player_dismissed !="",] %>% 
+        select(dfd_season,bowler,player_dismissed) %>% 
+        group_by(bowler)%>% 
+        filter(dfd_season == input$dseason) %>%
+        summarise(unique(bowler,player_dismissed),w = n()) %>% 
+        arrange(-w)%>% top_n(1)
+        ifelse(!is.null( wickets$bowler),wickets$bowler,"NA")
+  })
+  
+  output$SeasonWinnerT = renderTable({
+      
+        SWTeam = dfmatches %>% 
+        select(season,winner) %>% 
+        filter( season == input$dseason , winner != "")%>%
+        group_by(winner) %>% 
+        summarise( WinnerTeam = unique(winner), won = n()) %>% 
+        arrange(-won)
+        SWTeam
+     
+  })
+  output$SeasonWinnerT_Plot = renderPlotly({
+      
+        SWTeam = dfmatches %>% 
+        select(season,winner) %>% 
+        filter( season == input$dseason , winner != "")%>%
+        group_by(winner) %>% 
+        summarise( WinnerTeam = unique(winner), won = n()) %>% 
+        arrange(-won) %>% 
+          ggplot(aes(x=WinnerTeam,y=won),color='steelblue') + 
+          geom_bar(stat='identity',na.rm=T) +
+          labs(title = " Season Winner Teams with No of Matches Won", x = " Teams ", y = " No. of Wins ")+
+           theme(axis.text.x = element_text(angle = 45))
+          
+        ggplotly(SWTeam)
+     
+  })
+  
+  select_teams <- unique( c(dfmatches$team1,dfmatches$team2) ) 
+  select_player <- unique(c(dfdeliveries$batsman,dfdeliveries$bowler,dfdeliveries$fielder))
+  
+  output$SelectedTeam = renderUI({
+    selectInput( inputId = "dteam", label = "Select Team", 
+                 choices = select_teams, multiple = FALSE)
+  })
+    
+  output$SelectedPlayer = renderUI({
+    selectInput( inputId = "dplayer", label = "Select Player", 
+                 choices = select_player, multiple = FALSE)
+  })
+  
+  
+  
+    
+  output$BattingTeam_Performance = renderPlot({
+    
+    battingteamplot = dfdeliveries %>% 
+      select(match_id,dfd_season,batting_team,batsman,bye_runs,legbye_runs,penalty_runs,extra_runs,total_runs)%>%
+      filter(batting_team == input$dteam) %>%
+      group_by(dfd_season,batting_team)%>%
+      summarise(Yrs=unique(dfd_season),Batting=unique(batsman),ByeRun=sum(bye_runs),LegBye = sum(legbye_runs),Penalities = sum(penalty_runs),Extra = sum(extra_runs),TotalRuns=sum(total_runs),TotalMatches=n()) %>% 
+        arrange(dfd_season,Batting,-TotalMatches)
+      
+      battingteamplot %>% ggplot(aes(x=Batting, y=TotalRuns,colors=Batting))+
+        geom_bar(stat='identity',na.rm=T) +
+        facet_wrap(~Yrs )
+  }) 
+  
+  output$BowlingTeam_Performance = renderPlot({
+    bowlingteamdetails = dfdeliveries %>% 
+      select(match_id,dfd_season,bowler,match_id,bowling_team,wide_runs,penalty_runs,extra_runs,non_striker,player_dismissed,over)%>%
+      filter(bowling_team == input$dteam) %>%
+      group_by(dfd_season,bowler)%>%
+      summarise(Bowlers=unique(bowler),Yrs=unique(dfd_season),TotalMatches=n(),Wide=sum(wide_runs),Penarly=sum(penalty_runs),Extra=sum(extra_runs), Overs = sum(over)) %>%
+      arrange(dfd_season,-TotalMatches) 
+      
+     ggplot(bowlingteamdetails,aes(x=Bowlers, y=Overs,colors=Bowlers))+
+        geom_bar(stat='identity',na.rm=T) +
+        facet_wrap(~Yrs )
+  })
+  
+
+    output$BattingTeam_Player_Performance = renderPlot({
+    
+    battingteamplot = dfdeliveries %>% 
+      select(match_id,dfd_season,batting_team,batsman,bye_runs,legbye_runs,penalty_runs,extra_runs,total_runs)%>%
+      filter(batsman == input$dplayer) %>%
+      group_by(dfd_season,batting_team)%>%
+      summarise(Yrs=unique(dfd_season),ByeRun=sum(bye_runs),LegBye = sum(legbye_runs),Penalities = sum(penalty_runs),Extra = sum(extra_runs),TotalRuns=sum(total_runs),TotalMatches=n()) %>% 
+        arrange(dfd_season,-TotalMatches)
+      
+      battingteamplot %>% ggplot(aes(x=Yrs, y=TotalRuns,colors=Yrs))+
+        geom_bar(stat='identity',na.rm=T) +
+        facet_wrap(~Yrs )
+  }) 
+  
+  output$BowlingTeam_Player_Performance = renderPlot({
+    bowlingteamdetails = dfdeliveries %>% 
+      select(match_id,dfd_season,bowler,match_id,bowling_team,wide_runs,penalty_runs,extra_runs,non_striker,player_dismissed,over)%>%
+      filter(bowler == input$dplayer) %>%
+      group_by(dfd_season,bowler)%>%
+      summarise(Yrs=unique(dfd_season),TotalMatches=n(),Wide=sum(wide_runs),Penalty=sum(penalty_runs),Extra=sum(extra_runs), Overs = sum(over)) %>%
+      arrange(dfd_season,-TotalMatches) 
+      
+     ggplot(bowlingteamdetails,aes(x=Yrs, y=Overs,colors=Yrs))+
+        geom_bar(stat='identity',na.rm=T) +
+        facet_wrap(~Yrs )
+  })
+  
+  
+})
+  
+```

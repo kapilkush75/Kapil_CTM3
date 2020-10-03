@@ -1,0 +1,176 @@
+---
+title: "Data Visualization : Assignment-Week03"
+output: html_document
+author: "Kapil K"
+date : "August 02, 2020"
+---
+
+### Week 04: Assessment – Data Visualization
+
+
+
+### Used knitr to set root dir 
+#### root.dir = "C:\Users\kushwaha\Documents\Kapil-Own\CTM-IITM\R-WorkSpace\Week04"
+
+```{r setup, include=FALSE}
+
+# Setting the working directory
+knitr::opts_knit$set(root.dir = "C:\\Users\\kushwaha\\Documents\\Kapil-Own\\CTM-IITM\\R-WorkSpace\\Week04")
+
+```
+
+#### Load Libraries (ggplot2, dplyr, plotly,ggalt, readr)
+
+#### Dataset :- https://github.com/skathirmani/datasets/blob/master/parliament.csv
+
+```{r , warning=FALSE, message=FALSE, fig.height=5,fig.width=10}
+
+library(ggplot2)
+library(dplyr)
+library(plotly)
+library(ggalt)
+library (readr)
+
+urlfile="https://raw.githubusercontent.com/skathirmani/datasets/master/parliament.csv"
+
+parliament <- read.csv(url(urlfile))
+parliament <- data.frame(parliament)
+
+```
+
+
+#### 1. Using the parliament data set, identify top 5 parties across India based on total number of seats they have won so far
+
+#### p  = temporary variable for parliaments Election data for ggplot graph
+
+#### Variable Used 
+#### parliament - data set loaded from parliament.csv data file
+#### parliament_election - data frame extracted from parliament
+#### p - temporary data set for top5 Partys
+#### Top_Partys - Top 5 Partys
+#### 
+#### 
+#### 
+
+```{r, warning=FALSE,message=FALSE}
+
+parliament_election <- parliament %>% select( PARTY,VOTES,Position) %>%
+  group_by(PARTY) %>%
+  summarise(Top_Partys= unique(PARTY), Party_Votes = sum(VOTES))%>%
+  arrange(desc(Party_Votes))
+
+p <- parliament_election %>% select(Top_Partys,Party_Votes) %>% top_n(5)
+
+
+ggplot(p,aes(x=Top_Partys,y=(Party_Votes/100000000), fill=Top_Partys)) +   
+    geom_bar(stat='identity',na.rm=F)+
+    labs(x = "Top5 Partys", y = " Number of Votes ( In billions) ", title = "Top 5 parties across India based on total number of Seats ")
+
+```
+
+
+#### 2. Using those top ten parties alone, plot a stacked bar which represents yearwise total number wins
+####    a. Make sure that atleast Congress and BJP are colored using blue and saffron respectively. For other parties, choose your colors
+####    b. Ideally it would be great if you could keep other parties under others category with gray color. But this is optional
+#### Variables Used 
+#### 
+#### top10_partys - Top 10 Party's
+#### Party_Votes - Party's Sum of Votes 
+#### p = temporary data frame used to filter top10 Party's, and color configuration of Party's
+#### 
+```{r, warning=FALSE,message=FALSE, fig.width=10}
+
+parliament_election <- parliament %>% select( PARTY,VOTES,Position) %>%
+  group_by(PARTY) %>%
+  summarise(Top_Partys= unique(PARTY), Party_Votes = sum(VOTES))%>%
+  arrange(desc(Party_Votes))
+
+top10_partys <- parliament_election %>% select(Top_Partys,Party_Votes) %>% top_n(10)
+top10_partys <- top10_partys$Top_Partys
+top10_partys
+
+p <- parliament %>% select( YEAR,PARTY,VOTES) %>%
+  group_by(YEAR,PARTY) %>% filter( PARTY %in% top10_partys ) %>%
+  summarise(Years=unique(YEAR) ,Top_Partys= unique(PARTY), Party_Votes = sum(VOTES))%>%
+  arrange(desc(Party_Votes))
+
+p$colour = p$Top_Partys
+
+p$colour[p$colour == "INC"] = "blue"
+p$colour[p$colour == "BJP"] = "orange"
+p$colour[( p$colour != 'blue') & ( p$colour != 'orange')] = "gray"
+
+
+plt <- ggplot(p,aes(x=YEAR,y=(Party_Votes/100000000)),fill=colour) +  geom_bar(fill=p$colour, stat='identity',na.rm=F)+
+     labs(y = "Number of Votes ( In billions)", x = " Year of Election ", title = "Top 10 parties across India based on total number of Seats ")
+    
+
+plt
+
+```
+
+
+#### 3. For the year 2009, identify partywise total number of contestants and wins. Using treemap represent the same.
+####    a. No. of contestants should be the box size 
+####    b. % of winning should be the color of the box. Choose appropriate color ranges based on your results
+#### Variables Used 
+####    Election_2009 - calculated year 2009 total Votes
+####    p - temporary data frame generated with contestent, percent_votes
+####    pvotes -used for conversion of percentage to represent on graph
+####    Percent_Votes - Percentage of Votes for Party compared to total votes. 
+####
+
+```{r, warning=FALSE,message=FALSE, fig.width=10}
+library(treemap)
+Election_2009 = parliament %>% select( YEAR,VOTES) %>% filter(YEAR=='2009') %>% summarise( Party_Votes = sum(VOTES))
+Election_2009 = as.numeric(Election_2009)
+
+p <- parliament %>% select( YEAR,PARTY,VOTES,PC) %>%
+  group_by(PARTY) %>% filter( YEAR=='2009') %>%
+  summarise(Partys= unique(PARTY),contestent=n(), Percent_Votes = ((sum(VOTES)/Election_2009)*100) )
+
+pVotes = as.numeric(   round( percent_rank(p$Percent_Votes),3)*100 )
+
+tree_plt <- treemap( p, index = c('Partys', 'contestent','Percent_Votes'), vSize = 'contestent', vColor = 'Percent_Votes', type='value', palette='RdYlGn',mapping=c(min(pVotes,na.rm = F),40, max(pVotes,na.rm = F)) )
+
+```
+
+
+#### 4. Using the top five parties create a dumbbell chart with the following details
+####    a. X axis should be percentage of winning
+####    b. Y axis should be top five parties
+####    c. One bubble should represent 2004 and other one 2009.
+
+#### Dataset :- https://github.com/skathirmani/datasets/blob/master/parliament.csv
+####    top5_partys - top5 Party's from 2004 and 2009 data set
+####    total_votes2004 - total votes for 2004
+####    total_votes2004 - total votes for 2009
+####    Voting - data set for Party , percent voting for 2004 and 2009
+#### 
+#### 
+#### 
+
+```{r, warning=FALSE,message=FALSE}
+library(ggalt)
+
+parliament_election <- parliament %>% select(YEAR, PARTY,VOTES,Position) %>%
+  group_by(YEAR,PARTY) %>% filter(YEAR == '2004'| YEAR =='2009')%>%
+  summarise(YEAR,Top5_Partys= unique(PARTY), Party_Votes = sum(VOTES))%>%
+  arrange(desc(Party_Votes))
+
+top5_partys <- parliament_election %>% select(Top5_Partys,Party_Votes) %>% summarise(PartyVotes = sum(Party_Votes)) %>% top_n(5)
+
+total_votes2004 <- (top5_partys %>% select(YEAR,PartyVotes) %>% filter(YEAR=='2004')%>% summarise(sum_votes2004=sum(PartyVotes)))$sum_votes2004
+total_votes2009 <- (top5_partys %>% select(YEAR,PartyVotes) %>% filter(YEAR=='2009')%>% summarise(sum_votes2009=sum(PartyVotes)))$sum_votes2009
+
+Voting = top5_partys %>% select(YEAR,PARTY,PartyVotes) %>% group_by(PARTY) %>% 
+                            summarize( Votes2004 = round( 100*(PartyVotes[YEAR=='2004']/total_votes2004),2),
+                                      Votes2009 = round( 100* (PartyVotes[YEAR=='2009']/total_votes2009),2))
+
+ggplot(Voting, aes(x=Voting$Votes2004,xend=Voting$Votes2009, y = PARTY, group=PARTY)) +
+  geom_dumbbell(color='lightblue',size=3, colour_x = 'steelblue',color_xend = 'red') +
+  theme_minimal()+
+  labs(x = "Percentage Votes", title = "Dummble Chart - Election 2004 and 2009")
+```
+
+

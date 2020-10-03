@@ -1,0 +1,40 @@
+---
+title: "Data Visualization : Assignment-Week1"
+output: html_document
+author: "Kapil K"
+date: "July 22, 2020"
+---
+
+###
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+knitr::opts_chunk$set(root.dir = "C:\\Users\\kushwaha\\Documents\\Kapil-Own\\CTM-IITM\\R-WorkSpace\\Week02")
+getwd()
+```
+
+```{r}
+getwd()
+```
+
+```{r}
+
+library(dplyr)
+library(RColorBrewer)
+library(wordcloud)
+library(qcc)
+
+# Working Directory
+#setwd("C:\\Users\\kushwaha\\Documents\\Kapil-Own\\CTM-IITM\\R-WorkSpace\\Week02")
+
+# File Download from URL 
+#fileURL <- "https://github.com/skathirmani/datasets/blob/master/narendramodi_tweets.zip"
+filename <- "narendramodi_tweets.csv"
+#temp <- tempfile()
+#download.file(fileURL,temp)
+#download(fileURL, mode="rb") 
+data <- read.csv(filename)
+unlink(temp)
+```

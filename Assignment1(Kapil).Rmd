@@ -1,0 +1,188 @@
+---
+title: "Data Visualization : Assignment-Week02"
+output: html_document
+author: "Kapil K"
+date: "July 21, 2020"
+---
+
+### Week 2: Assessment – Data Visualization
+
+
+### Instructions:
+### .
+### 1. Use R Markdown for the above questions.
+### 2. Have a separate code snippet for each question.
+### 3. Mention the question number in the comment above every code block.
+### 4. For Question 3, mention the sub division in a separate comment above the respective code block.
+### 5. Use print statements wherever ONLY when it not necessary.
+### 6. Upload the required R files and output files.
+### 7. Link for the data set: https://github.com/skathirmani/datasets/blob/master/narendramodi_tweets.zip
+
+
+### Used knitr to set root dir 
+#### root.dir = "C:\\Users\\kushwaha\\Documents\\Kapil-Own\\CTM-IITM\\R-WorkSpace\\Week02"
+
+```{r setup, include=FALSE}
+
+# Setting the working directory
+knitr::opts_knit$set(root.dir = "C:\\Users\\kushwaha\\Documents\\Kapil-Own\\CTM-IITM\\R-WorkSpace\\Week02")
+
+```
+####
+####
+### Q1. Using narendra modi tweets data (from the link below), plot the histogram of favorites_count column and comment ### on the type of distribution (whether it is gaussian distribution, left skewed or right skewed etc.)
+
+```{r}
+tweets <- read.csv("narendramodi_tweets.csv")
+
+hist(tweets$favorite_count)
+```
+
+####
+####
+####
+####
+#### Answer :
+#### Normal or Gaussian distribution is a type of continuous probability distribution for a real-valued random
+#### variable. One side is mirror impage f other side, its symmetrical disctribution.
+#### 
+#### If one tail is longer than another, the distribution is skewed means asymmetrical distribution.
+#### Histogram of Narendra Modi Tweets is skewed towards right, its asymmetric distribution, right skewed
+
+#### Using “favorite_count” column, plot a box plot and through code calculate the upper whisker value and IQR value
+
+### Variable used :
+#### Uw Upper Wisker
+#### q1 1st qurtile
+#### q3 3rd qurtile
+#### IQR Inter Quartile Range ( q3 - q1)
+#### answer data.frame ( Upper Whisker , IQR)
+
+### Data set :
+#### tweets = narendramodi tweets csv file
+
+
+```{r}
+require(ggplot2)
+tweets <- read.csv("narendramodi_tweets.csv")
+boxplot(tweets$favorite_count, data = tweets$favorite_count, xlab = " Tweets ", ylab = "number of tweets",main = "Narendramodi tweets boxplot")
+
+Uw <- max(tweets$favorite_count)
+
+q1 <- Uw*0.25
+q3 <- Uw*0.75
+IQR = (q3-q1)
+answer <- c("Upper_whisker" = Uw, "IQR" = IQR)
+print(answer)
+```
+
+### Using amazon reviews data create a word cloud using “reviewText” column to identify most frequently used words
+### a. Convert the text column in to character type and also transform the text to lower case
+### b. Identify the individual words and count their frequencies
+
+### Also create a word cloud using online API (https://www.wordclouds.com/) and save the image as PNG. Include this ### image in your Rmd file towards the end.
+
+### 7. Link for the data set: https://github.com/skathirmani/datasets/blob/master/amazon_reviews.csv")
+
+```{r}
+library(dplyr)
+library(RColorBrewer)
+library(wordcloud)
+library(qcc)
+
+# Working Directory
+
+
+# File read CSV 
+
+filename <- "amazon_reviews.csv"
+Ar_tweets <- read.csv("amazon_reviews.csv",header=T,sep=",")
+
+rt <- as.character(Ar_tweets$reviewText)
+rt <- as.character(rt)
+rt <- tolower(rt)
+
+```
+### Count frequency of individual words
+
+```{r}
+
+# Retain alphabets, spaces and hash symbol
+list_of_words = gsub('[^a-z #]',"",rt)
+rows_words = strsplit(rt, ' ')
+words = unlist(rows_words)
+
+words_freq = table(words)
+words_freq = as.data.frame(words_freq)
+words_freq = words_freq %>% arrange(-Freq)
+
+```
+
+###
+###
+###
+###
+###
+###
+###
+###
+###
+###
+### c. Remove common stop words and also identify custom stop words wh
+
+### Variables used :
+### stop_words -  common stop words from  tm library 
+### custom_words - identified custom stop words
+### words_freq_imp - filtered words from words_freq
+### 
+
+```{r}
+require(tm)
+stop_words = stopwords() # Common stop words from tm library
+custom_words = c('', 'i', 'b&n;','it','.','the','a','i','and','to','is','of','will','get','read','-','much','it.','now','&','go','can','also','still','lot','got','able','since','never','seems','2','it,','put','without','need','use','give','might','working','day','either','work','actually','went','several','sure','one','turn','take','inch','hard','know','far','say','see','found','want','well','used','nook','nook.','nook,','many','find','another','update','make','3','way','made')
+
+words_freq_imp = words_freq %>% 
+  filter(!words %in% stop_words) %>%
+  filter(!words %in% custom_words)
+
+head(words_freq_imp, 100)
+
+```
+
+
+### d. Create a word cloud for top 100 words alone
+### Word_freq_imp - frequent important words 
+```{r}
+require(wordcloud)
+require(RColorBrewer)
+
+# Wordcloud creation
+
+wordcloud(
+  words_freq_imp$words,
+  words_freq_imp$Freq,
+  min.freq = 100,
+  random.order = T,
+  colors = brewer.pal(7, 'Pastel1')
+)
+```
+```{r}
+require(tm)
+require(SnowballC)
+require(wordcloud)
+require( RCurl)
+require(RColorBrewer)
+
+source('http://www.sthda.com/upload/rquery_wordcloud.r')
+filename <- "amazon_reviews.csv"
+res<-rquery.wordcloud(filename, type ="file", lang = "english", min.freq = 1,  max.words = 100)
+
+png(file="saving_amazon_review.png",width=800, height=650)
+res<-rquery.wordcloud(filename, type ="file", lang = "english", min.freq = 1,  max.words = 100)
+getwd()
+dev.copy()
+dev.off()
+
+```
+
+```
